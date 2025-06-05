@@ -1,0 +1,9 @@
+[project]
+name = "adjoint"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fdtdx@git+https://github.com/ymahlau/fdtdx.git@56cff86",
+]
