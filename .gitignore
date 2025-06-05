@@ -1,2 +1,4 @@
 .venv
 outputs
+.vscode
+*.pyc

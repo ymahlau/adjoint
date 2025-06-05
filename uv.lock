@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fdtdx", git = "https://github.com/ymahlau/fdtdx.git?rev=56cff86" }]
+requires-dist = [{ name = "fdtdx", git = "https://github.com/ymahlau/fdtdx.git?rev=4058644" }]
 
 [[package]]
 name = "annotated-types"
@@ -277,7 +277,7 @@ epy = [
 [[package]]
 name = "fdtdx"
 version = "0.4.0"
-source = { git = "https://github.com/ymahlau/fdtdx.git?rev=56cff86#56cff8681f932331c7fa376ed525a048b8d59ce9" }
+source = { git = "https://github.com/ymahlau/fdtdx.git?rev=4058644#40586447596a49d226fb6fef091d8415c51518c0" }
 dependencies = [
     { name = "equinox" },
     { name = "jax" },
