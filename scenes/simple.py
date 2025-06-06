@@ -38,16 +38,16 @@ def create_simple_simulation_scene(
     logger.info(f"{period_steps=}")
     logger.info(f"{config.max_travel_distance=}")
 
-    gradient_config = fdtdx.GradientConfig(
-        method="reversible",
-        # num_checkpoints=30,
-        recorder=fdtdx.Recorder(
-            modules=[
-                fdtdx.DtypeConversion(dtype=jnp.float16),
-            ]
-        )
-    )
-    config = config.aset("gradient_config", gradient_config)
+    # gradient_config = fdtdx.GradientConfig(
+    #     method="reversible",
+    #     # num_checkpoints=30,
+    #     # recorder=fdtdx.Recorder(
+    #     #     modules=[
+    #     #         fdtdx.DtypeConversion(dtype=jnp.float16),
+    #     #     ]
+    #     # )
+    # )
+    # config = config.aset("gradient_config", gradient_config)
 
     constraints = []
 
@@ -104,6 +104,12 @@ def create_simple_simulation_scene(
             other_positions=(0, 0, 0),
         )
     )
+    
+    device_forward_detector = fdtdx.FieldDetector(
+        name="device_fields",
+        plot=False,
+    )
+    constraints.extend(device_forward_detector.same_position_and_size(device))
     
     
     start_time = round(25 * period / config.time_step_duration)

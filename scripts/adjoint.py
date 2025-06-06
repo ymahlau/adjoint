@@ -34,9 +34,13 @@ def main():
         # objective = out_energy.mean()
         
         def loss_fn(eh):
-            return -fdtdx.compute_energy(eh[:3], eh[3:], 1, 1, axis=0).sum() / 2
+            return jnp.square(jnp.abs(eh[0])).sum()
+            # return -fdtdx.compute_energy(eh[:3], eh[3:], 1, 1, axis=0).sum() / 2
         
         loss, grad_eh = jax.value_and_grad(loss_fn)(out_phasors)
+        
+        # save forward fields
+        device_forward_fields = arrays.detector_states["device_fields"]
         
         # adjoint simulation
         objects = objects.aset("['adj_source']->amplitude_E", jnp.abs(grad_eh[:3]))
@@ -47,11 +51,19 @@ def main():
         
         _, arrays = fdtdx.run_fdtd(arrays, objects, config, key)
         
-        return loss, (arrays,)
+        return loss, (arrays, device_forward_fields)
     
-    (loss, (arrays,)) = jax.jit(sim_fn)(params, arrays, objects, key)
-    exp_logger.log_detectors(iter_idx=0, objects=objects, detector_states=arrays.detector_states)
+    (loss, (arrays, forward_fields)) = jax.jit(sim_fn)(params, arrays, objects, key)
+    ff = forward_fields["fields"]
+    bf = arrays.detector_states["device_fields"]["fields"]
+    adj_grads = (bf * ff).sum(axis=(0, 1))
+    
+    debug_plot_2d(adj_grads.mean(axis=0), tmp_dir=exp_logger.cwd / "figures", filename="grad_x.png")
+    debug_plot_2d(adj_grads.mean(axis=1), tmp_dir=exp_logger.cwd / "figures", filename="grad_y.png")
+    debug_plot_2d(adj_grads.mean(axis=2), tmp_dir=exp_logger.cwd / "figures", filename="grad_z.png")
+    
     a = 1
+    exp_logger.log_detectors(iter_idx=0, objects=objects, detector_states=arrays.detector_states)
 
 if __name__ == '__main__':
     main()
