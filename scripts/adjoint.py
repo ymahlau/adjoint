@@ -3,6 +3,7 @@ import jax
 import jax.numpy as jnp
 from fdtdx.core.plotting.debug import debug_plot_2d
 
+from extensions.source import CustomHardPlanceSource
 from scenes.simple import create_simple_simulation_scene
 
 def main():
@@ -10,7 +11,7 @@ def main():
     key, subkey = jax.random.split(key)
     objects, arrays, params, config, exp_logger = create_simple_simulation_scene(
         subkey, 
-        create_video=False,
+        create_video=True,
         backward_video=False,
     )
     params = jax.tree_util.tree_map(lambda x: jnp.ones_like(x) / 2, params)
@@ -24,15 +25,33 @@ def main():
         key, subkey = jax.random.split(key)
         arrays, objects, _ = fdtdx.apply_params(arrays, objects, params, subkey)
         _, arrays = fdtdx.run_fdtd(arrays, objects, config, key)
+        
         out_EH = arrays.detector_states["output_EH"]["fields"]
         out_energy = fdtdx.compute_energy(out_EH[:, :3], out_EH[:, 3:], 1, 1, axis=1).sum(axis=(1, 2, 3))
-        objective = out_energy.mean()
-        return -objective, (arrays,)
+        
+        out_phasors = arrays.detector_states["output_phasor"]["phasor"][0, 0]
+        # energy_from_phasor = fdtdx.compute_energy(out_phasors[:3], out_phasors[3:], 1, 1, axis=0).sum() / 2
+        # objective = out_energy.mean()
+        
+        def loss_fn(eh):
+            return -fdtdx.compute_energy(eh[:3], eh[3:], 1, 1, axis=0).sum() / 2
+        
+        loss, grad_eh = jax.value_and_grad(loss_fn)(out_phasors)
+        
+        # adjoint simulation
+        objects = objects.aset("['adj_source']->amplitude_E", jnp.abs(grad_eh[:3]))
+        objects = objects.aset("['adj_source']->amplitude_H", jnp.abs(grad_eh[3:]))
+        objects = objects.aset("['adj_source']->phase_E", jnp.angle(grad_eh[:3]))
+        objects = objects.aset("['adj_source']->phase_H", jnp.angle(grad_eh[3:]))
+        objects = objects.aset("['source']->static_amplitude_factor", 0.0)
+        
+        _, arrays = fdtdx.run_fdtd(arrays, objects, config, key)
+        
+        return loss, (arrays,)
     
-    # (loss, (arrays,)), grads = jax.jit(jax.value_and_grad(sim_fn, has_aux=True))(params, arrays, objects, key)
-    
+    (loss, (arrays,)) = jax.jit(sim_fn)(params, arrays, objects, key)
     exp_logger.log_detectors(iter_idx=0, objects=objects, detector_states=arrays.detector_states)
-    
+    a = 1
 
 if __name__ == '__main__':
     main()

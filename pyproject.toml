@@ -5,5 +5,5 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fdtdx@git+https://github.com/ymahlau/fdtdx.git@4058644",
+    "fdtdx@git+https://github.com/ymahlau/fdtdx.git@40a17a9",
 ]

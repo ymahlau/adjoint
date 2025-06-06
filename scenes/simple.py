@@ -4,6 +4,8 @@ import jax.numpy as jnp
 from loguru import logger
 import pytreeclass
 
+from extensions.source import CustomHardPlanceSource
+
 def create_simple_simulation_scene(
     key: jax.Array,
     create_video: bool,
@@ -61,6 +63,7 @@ def create_simple_simulation_scene(
     constraints.extend(c_list)
 
     source = fdtdx.GaussianPlaneSource(
+        name="source",
         partial_grid_shape=(None, None, 1),
         partial_real_shape=(10e-6, 10e-6, None),
         fixed_E_polarization_vector=(1, 0, 0),
@@ -299,6 +302,39 @@ def create_simple_simulation_scene(
     )
     constraints.append(
         output_eh.place_relative_to(
+            volume,
+            axes=(0, 1, 2),
+            own_positions=(0, 0, 0),
+            other_positions=(0, 0, -1),
+            grid_margins=(0, 0, 15,)
+        )
+    )
+    out_phasor = fdtdx.PhasorDetector(
+        name="output_phasor",
+        wave_characters=(fdtdx.WaveCharacter(wavelength=wavelength),),
+        partial_grid_shape=(None, None, 1),
+        partial_real_shape=(1e-6, 1e-6, None),
+        switch=switch,
+        reduce_volume=False,
+        plot=False,
+    )
+    constraints.append(
+        out_phasor.place_relative_to(
+            volume,
+            axes=(0, 1, 2),
+            own_positions=(0, 0, 0),
+            other_positions=(0, 0, -1),
+            grid_margins=(0, 0, 15,)
+        )
+    )
+    adj_source = CustomHardPlanceSource(
+        name="adj_source",
+        wave_character=fdtdx.WaveCharacter(wavelength=wavelength),
+        partial_grid_shape=(None, None, 1),
+        partial_real_shape=(1e-6, 1e-6, None),
+    )
+    constraints.append(
+        adj_source.place_relative_to(
             volume,
             axes=(0, 1, 2),
             own_positions=(0, 0, 0),
